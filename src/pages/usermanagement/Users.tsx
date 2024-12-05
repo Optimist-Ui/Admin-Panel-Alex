@@ -135,9 +135,9 @@ const Users = (): JSX.Element => {
             preConfirm: () => {
                 const firstName = (document.getElementById('swal-input1') as HTMLInputElement).value.trim();
                 const permissions = (document.getElementById('swal-input2') as HTMLInputElement).value.trim();
-                const role = (document.getElementById('swal-input2') as HTMLInputElement).value.trim();
-                const email = (document.getElementById('swal-input3') as HTMLInputElement).value.trim();
-                const phone = (document.getElementById('swal-input4') as HTMLInputElement).value.trim();
+                const role = (document.getElementById('swal-input3') as HTMLInputElement).value.trim();
+                const email = (document.getElementById('swal-input4') as HTMLInputElement).value.trim();
+                const phone = (document.getElementById('swal-input5') as HTMLInputElement).value.trim();
 
                 if (!firstName || !permissions || !email || !phone || !role) {
                     Swal.showValidationMessage('All fields are required');
