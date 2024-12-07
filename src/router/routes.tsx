@@ -1,4 +1,5 @@
 import { lazy } from 'react';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 const Roles = lazy(() => import('../pages/usermanagement/Roles'));
 const Users = lazy(() => import('../pages/usermanagement/Users'));
@@ -10,18 +11,41 @@ const Index = lazy(() => import('../pages/Index'));
 const Error404 = lazy(() => import('../pages/Error404'));
 
 const routes = [
-    // Base Path
     {
         path: '/',
-        element: <Index />,
+        element: (
+            <ProtectedRoute>
+                <Index />
+            </ProtectedRoute>
+        ),
         layout: 'default',
     },
-
-    // Auth
     {
-        path: '/singup',
-        element: <RegisterCover />,
-        layout: 'blank',
+        path: '/permissions',
+        element: (
+            <ProtectedRoute>
+                <Permissions />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/roles',
+        element: (
+            <ProtectedRoute>
+                <Roles />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/users',
+        element: (
+            <ProtectedRoute>
+                <Users />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
     },
     {
         path: '/login',
@@ -29,35 +53,19 @@ const routes = [
         layout: 'blank',
     },
     {
+        path: '/signup',
+        element: <RegisterCover />,
+        layout: 'blank',
+    },
+    {
         path: '/recover-password',
         element: <RecoverIdCover />,
         layout: 'blank',
     },
-
-    // dashboard
-
-    // User Managment
-    {
-        path: '/permissions',
-        element: <Permissions />,
-        layout: 'default',
-    },
-    {
-        path: '/roles',
-        element: <Roles />,
-        layout: 'default',
-    },
-    {
-        path: '/users',
-        element: <Users />,
-        layout: 'default',
-    },
-
-    // catch all route(404)
     {
         path: '*',
-        element: <Error404 />, // Render the 404 component
-        layout: 'default', // Specify the layout if required
+        element: <Error404 />,
+        layout: 'default',
     },
 ];
 

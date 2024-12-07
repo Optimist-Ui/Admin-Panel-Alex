@@ -19,8 +19,10 @@ import IconMail from '../Icon/IconMail';
 import IconLogout from '../Icon/IconLogout';
 import IconMenuDashboard from '../Icon/Menu/IconMenuDashboard';
 import IconCaretDown from '../Icon/IconCaretDown';
+import { useAuth } from '../../context/AuthContext';
 
 const Header = () => {
+    const { logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     useEffect(() => {
@@ -65,7 +67,7 @@ const Header = () => {
             cancelButtonText: 'Cancel',
         }).then((result) => {
             if (result.isConfirmed) {
-                // Perform logout logic here if needed (e.g., clear tokens or session data)
+                logout();
                 navigate('/login'); // Redirect to the login page
             }
         });

@@ -1,39 +1,14 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
 import { useEffect, useState } from 'react';
-import sortBy from 'lodash/sortBy';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '../../store/themeConfigSlice';
 import Swal from 'sweetalert2';
 import { FaEdit, FaTrashAlt } from 'react-icons/fa';
-import Permissions from './Permissions';
+import { useUsersListing, User } from '../../hooks/useUsersListing';
+import { useDeleteUser } from '../../hooks/users/useDeleteUser';
+import { useUpdateUser } from '../../hooks/users/useUpdateUser';
 
-type User = {
-    id: number;
-    firstName: string;
-    permissions: string;
-    email: string;
-    phone: string;
-    role: string;
-};
-
-const rowData: User[] = [
-    {
-        id: 1,
-        firstName: 'Caroline',
-        permissions: 'CRUD',
-        email: 'carolinejensen@zidant.com',
-        phone: '+1 (821) 447-3782',
-        role: 'Agent',
-    },
-    {
-        id: 2,
-        firstName: 'Celeste',
-        permissions: 'CRUD',
-        email: 'celestegrant@polarax.com',
-        phone: '+1 (838) 515-3408',
-        role: 'Agency',
-    },
-];
+const PAGE_SIZES = [10, 20, 30, 50, 100];
 
 const Users = (): JSX.Element => {
     const dispatch = useDispatch();
@@ -41,64 +16,64 @@ const Users = (): JSX.Element => {
         dispatch(setPageTitle('User Management'));
     }, [dispatch]);
 
-    const [page, setPage] = useState<number>(1);
+    const { users, loading: usersLoading, error: usersError, refetchUsers } = useUsersListing();
+    const { deleteUser, loading: deleteLoading, error: deleteError } = useDeleteUser();
+    const { updateUser, loading: updateLoading, error: updateError } = useUpdateUser();
+
+    const [page, setPage] = useState(1);
     const [search, setSearch] = useState('');
-    const PAGE_SIZES: number[] = [10, 20, 30, 50, 100];
-    const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0]);
-    const [initialRecords, setInitialRecords] = useState<User[]>(sortBy(rowData, 'id'));
-    const [recordsData, setRecordsData] = useState<User[]>(initialRecords);
+    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+    const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+    const [recordsData, setRecordsData] = useState<User[]>([]);
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
         columnAccessor: 'id',
         direction: 'asc',
     });
+
     useEffect(() => {
-        setInitialRecords(() => {
-            return rowData.filter((item) => {
-                return (
-                    item.id.toString().includes(search.toLowerCase()) ||
-                    item.firstName.toLowerCase().includes(search.toLowerCase()) ||
-                    item.permissions.toLowerCase().includes(search.toLowerCase()) ||
-                    item.role.toLowerCase().includes(search.toLowerCase()) ||
-                    item.email.toLowerCase().includes(search.toLowerCase()) ||
-                    item.phone.toLowerCase().includes(search.toLowerCase())
-                );
-            });
-        });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
-    useEffect(() => {
-        setPage(1);
-    }, [pageSize]);
+        const lowercasedSearch = search.toLowerCase();
+        const filtered = users.filter((user) => [user.id, user.name, user.email, user.sellerType, user.isAlreadyAgent, user.isVerified].join(' ').toLowerCase().includes(lowercasedSearch));
+        setFilteredUsers(filtered);
+    }, [search, users]);
 
     useEffect(() => {
         const from = (page - 1) * pageSize;
         const to = from + pageSize;
-        setRecordsData([...initialRecords.slice(from, to)]);
-    }, [page, pageSize, initialRecords]);
+        setRecordsData(filteredUsers.slice(from, to));
+    }, [page, pageSize, filteredUsers]);
 
     const handleEdit = (user: User): void => {
         Swal.fire({
             title: 'Edit User',
             html: `
                 <div style="display: flex; color: #333; flex-direction: column; gap: 10px;">
-                    <input id="swal-input1" class="swal2-input" placeholder="Name" value="${user.firstName}" autofocus required />
-                    <input id="swal-input2" class="swal2-input" placeholder="Role" value="${user.role}" required />
-                    <input id="swal-input3" class="swal2-input" placeholder="Permissions" value="${user.permissions}" required />
-                    <input id="swal-input4" class="swal2-input" placeholder="Email" value="${user.email}" type="email" required />
-                    <input id="swal-input5" class="swal2-input" placeholder="Phone" value="${user.phone}" type="tel" required />
+                    <input id="swal-input1" class="swal2-input" placeholder="Name" autofocus  value="${user.name}" required />
+                    <input id="swal-input2" class="swal2-input" placeholder="Email" value="${user.email}" required />
+                    <input id="swal-input3" class="swal2-input" placeholder="Seller Type" value="${user.sellerType || ''}" />
+                    <div  class="flex  justify-center  text-[#333] text-start text-nowrap gap-5 my-5 grid-flow-row items-center">
+                    <label class="flex justify-center items-center">
+                        <input id="swal-input4" type="checkbox" class="mx-2 cursor-pointer" style="transform: scale(1.5)" ${user.isAlreadyAgent ? 'checked' : ''} />
+                        Already Agent
+                    </label>
+                    <label class="flex justify-center items-center">
+                        <input id="swal-input5" type="checkbox" class="mx-2 cursor-pointer" style="transform: scale(1.5)" ${user.isVerified ? 'checked' : ''} />
+                        Verified
+                    </label>
+                </div>
+                
                 </div>
             `,
             confirmButtonText: 'Save',
             showCancelButton: true,
             preConfirm: () => {
-                const firstName = (document.getElementById('swal-input1') as HTMLInputElement).value.trim();
-                const role = (document.getElementById('swal-input2') as HTMLInputElement).value.trim();
-                const permissions = (document.getElementById('swal-input3') as HTMLInputElement).value.trim();
-                const email = (document.getElementById('swal-input4') as HTMLInputElement).value.trim();
-                const phone = (document.getElementById('swal-input5') as HTMLInputElement).value.trim();
+                const name = (document.getElementById('swal-input1') as HTMLInputElement).value.trim();
+                const email = (document.getElementById('swal-input2') as HTMLInputElement).value.trim();
+                const sellerType = (document.getElementById('swal-input3') as HTMLInputElement).value.trim();
+                const is_already_agent = (document.getElementById('swal-input4') as HTMLInputElement).checked;
+                const isVerified = (document.getElementById('swal-input5') as HTMLInputElement).checked;
 
-                if (!firstName || !permissions || !email || !phone || !role) {
-                    Swal.showValidationMessage('All fields are required');
+                if (!name || !email) {
+                    Swal.showValidationMessage('Name and Email are required');
                     return;
                 }
 
@@ -107,13 +82,17 @@ const Users = (): JSX.Element => {
                     return;
                 }
 
-                return { id: user.id, firstName, permissions, email, phone, role };
+                return { name, email, sellerType, is_already_agent, isVerified };
             },
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                const updatedRecords = initialRecords.map((item) => (item.id === user.id ? result.value : item));
-                setInitialRecords(updatedRecords);
-                Swal.fire('Success', 'User updated successfully!', 'success');
+                const success = await updateUser(user.id, result.value);
+                if (success) {
+                    Swal.fire('Updated!', 'User details have been updated.', 'success');
+                    refetchUsers();
+                } else {
+                    Swal.fire('Error!', updateError || 'Failed to update user.', 'error');
+                }
             }
         });
     };
@@ -121,60 +100,36 @@ const Users = (): JSX.Element => {
     const handleAdd = (): void => {
         Swal.fire({
             title: 'Add New User',
-            html: `
-                <div style="display: flex; color: #333; flex-direction: column; gap: 10px;">
-                    <input id="swal-input1" class="swal2-input" placeholder="Name" autofocus required />
-                    <input id="swal-input2" class="swal2-input" placeholder="Role" required />
-                    <input id="swal-input3" class="swal2-input" placeholder="Permissions" required />
-                    <input id="swal-input4" class="swal2-input" placeholder="Email" type="email" required />
-                    <input id="swal-input5" class="swal2-input" placeholder="Phone" type="tel" required />
-                </div>
-            `,
-            confirmButtonText: 'Add',
-            showCancelButton: true,
-            preConfirm: () => {
-                const firstName = (document.getElementById('swal-input1') as HTMLInputElement).value.trim();
-                const permissions = (document.getElementById('swal-input2') as HTMLInputElement).value.trim();
-                const role = (document.getElementById('swal-input3') as HTMLInputElement).value.trim();
-                const email = (document.getElementById('swal-input4') as HTMLInputElement).value.trim();
-                const phone = (document.getElementById('swal-input5') as HTMLInputElement).value.trim();
-
-                if (!firstName || !permissions || !email || !phone || !role) {
-                    Swal.showValidationMessage('All fields are required');
-                    return;
-                }
-
-                if (!/^\S+@\S+\.\S+$/.test(email)) {
-                    Swal.showValidationMessage('Invalid email format');
-                    return;
-                }
-
-                return { id: Date.now(), firstName, permissions, email, phone, role };
-            },
+            html: `...`, // Add user form here as needed
         }).then((result) => {
             if (result.isConfirmed) {
-                setInitialRecords([...initialRecords, result.value]);
-                Swal.fire('Success', 'User added successfully!', 'success');
+                console.log('New user:', result.value);
             }
         });
     };
 
-    const handleDelete = (userId: number): void => {
+    const handleDelete = (userId: string): void => {
         Swal.fire({
             title: 'Are you sure?',
             text: 'This action cannot be undone!',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                const updatedRecords = initialRecords.filter((item) => item.id !== userId);
-                setInitialRecords(updatedRecords);
-                Swal.fire('Deleted!', 'User has been removed successfully.', 'success');
+                const success = await deleteUser(userId);
+                if (success) {
+                    Swal.fire('Deleted!', 'User has been deleted successfully.', 'success');
+                    refetchUsers();
+                } else {
+                    Swal.fire('Error!', deleteError || 'Failed to delete user.', 'error');
+                }
             }
         });
     };
+
+    if (usersLoading) return <div>Loading...</div>;
+    if (usersError) return <div>Error: {usersError}</div>;
 
     return (
         <div>
@@ -196,32 +151,44 @@ const Users = (): JSX.Element => {
                         className="whitespace-nowrap table-hover"
                         records={recordsData}
                         columns={[
-                            { accessor: 'id', sortable: true },
-                            { accessor: 'firstName', sortable: true },
-                            { accessor: 'role', sortable: true },
-                            { accessor: 'permissions', sortable: true },
-                            { accessor: 'email', sortable: true },
-                            { accessor: 'phone', title: 'Phone No.', sortable: true },
+                            { accessor: 'id', title: 'ID', sortable: true },
+                            { accessor: 'name', title: 'Name', sortable: true },
+                            { accessor: 'email', title: 'Email', sortable: true },
+                            {
+                                accessor: 'sellerType',
+                                title: 'Seller Type',
+                                render: (record) => (record.sellerType ? record.sellerType : 'N/A'),
+                            },
+                            {
+                                accessor: 'isAlreadyAgent',
+                                title: 'Already Agent',
+                                render: (record) => (record.isAlreadyAgent ? 'Yes' : 'No'),
+                            },
+                            {
+                                accessor: 'isVerified',
+                                title: 'Verified',
+                                render: (record) => (record.isVerified ? 'Yes' : 'No'),
+                            },
                             {
                                 accessor: 'actions',
                                 title: 'Actions',
                                 render: (record) => (
                                     <div className="flex gap-2">
-                                        <button onClick={() => handleEdit(record)}>
+                                        <button onClick={() => handleEdit(record)} disabled={updateLoading}>
                                             <FaEdit />
                                         </button>
-                                        <button onClick={() => handleDelete(record.id)}>
-                                            <FaTrashAlt style={{}} />
+                                        <button onClick={() => handleDelete(record.id)} disabled={deleteLoading}>
+                                            <FaTrashAlt />
                                         </button>
                                     </div>
                                 ),
                             },
                         ]}
                         highlightOnHover
-                        totalRecords={initialRecords.length}
+                        totalRecords={filteredUsers.length}
                         recordsPerPage={pageSize}
                         page={page}
-                        onPageChange={(p) => setPage(p)}
+                        onPageChange={setPage}
                         recordsPerPageOptions={PAGE_SIZES}
                         onRecordsPerPageChange={setPageSize}
                         sortStatus={sortStatus}

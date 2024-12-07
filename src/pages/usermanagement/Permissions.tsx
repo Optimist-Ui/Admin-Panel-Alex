@@ -1,175 +1,64 @@
 import React, { useState } from 'react';
-import Swal from 'sweetalert2';
-import { FaTrash, FaPencilAlt } from 'react-icons/fa';
-
-// Define the type for permission data
-interface PermissionData {
-    id: number;
-    name: string;
-}
+import { usePermissionsListing } from '../../hooks/usePermissionsListing';
 
 const Permissions = () => {
-    const [permissions, setPermissions] = useState<PermissionData[]>([]);
+    const { permissions, loading, error } = usePermissionsListing();
     const [search, setSearch] = useState<string>('');
 
-    // Function to handle adding a new permission
-    const handleAddPermission = (newPermission: PermissionData) => {
-        // Check if the permission already exists
-        if (permissions.some((perm) => perm.name === newPermission.name)) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Permission Already Exists',
-                text: 'Please choose a different name for the permission.',
-            });
-            return;
-        }
+    // Filtered permissions based on the search query
+    const filteredPermissions = permissions.filter((perm) => perm.name.toLowerCase().includes(search.toLowerCase()));
 
-        setPermissions((prev) => [...prev, newPermission]);
-        showToast('success');
-    };
+    if (loading) {
+        return <div className="text-center py-10">Loading permissions...</div>;
+    }
 
-    // Function to handle deleting a permission
-    const handleDeletePermission = (id: number) => {
-        setPermissions((prev) => prev.filter((perm) => perm.id !== id));
-        showToast('danger');
-    };
-
-    // Function to handle editing a permission
-    const handleEditPermission = (updatedPermission: PermissionData) => {
-        setPermissions((prev) => prev.map((perm) => (perm.id === updatedPermission.id ? updatedPermission : perm)));
-        showToast('info');
-    };
-
-    // Toast notification
-    const showToast = (color: string) => {
-        const toast = Swal.mixin({
-            toast: true,
-            position: 'bottom-end', // Move to the top-right
-            showConfirmButton: false,
-            timer: 3000,
-            showCloseButton: true,
-            customClass: {
-                popup: `color-${color}`,
-            },
-        });
-        toast.fire({
-            title: color === 'success' ? 'Permission Added!' : color === 'danger' ? 'Permission Deleted!' : 'Permission Updated!',
-        });
-    };
+    if (error) {
+        return <div className="text-center py-10 text-red-500">{error}</div>;
+    }
 
     return (
-        <div className="flex flex-col max-w-[75%] mx-auto">
-            <div className="flex justify-center">
-                <h2 className="text-2xl font-bold mb-10">Permissions</h2>
+        <div className="flex flex-col py-10">
+            {/* Header */}
+            <div className="text-center mb-10">
+                <h2 className="text-3xl font-bold mb-2">Permissions</h2>
+                <p className="text-gray-500">View all available permissions below. Use the search bar to quickly find a specific permission.</p>
             </div>
 
-            {/* Search bar */}
-            <div className="flex md:items-center flex-row justify-between mx-5 gap-5 mb-5">
-                <button
-                    className="btn btn-primary py-2 hover:bg-white hover:text-primary hover:border-primary"
-                    onClick={() =>
-                        Swal.fire({
-                            title: 'Add Permission',
-                            html: `
-                                <input id="permissionName" class="swal2-input" placeholder="Permission Name" required />
-                            `,
-                            focusConfirm: false,
-                            showCancelButton: true, // Show Cancel button
-                            cancelButtonText: 'Cancel', // Text for the Cancel button
-                            confirmButtonText: 'Add', // Text for the Confirm button
-                            preConfirm: () => {
-                                const permissionName = (document.getElementById('permissionName') as HTMLInputElement).value.trim();
-                                if (!permissionName) {
-                                    Swal.showValidationMessage('Permission Name is required!');
-                                    return false;
-                                }
-
-                                const newPermission: PermissionData = {
-                                    id: Date.now(),
-                                    name: permissionName,
-                                };
-
-                                handleAddPermission(newPermission);
-                            },
-                        })
-                    }
-                >
-                    Add Permission
-                </button>
-                <div className="flex justify-between items-center">
-                    <input
-                        type="text"
-                        placeholder="Search permissions"
-                        className="form-input w-auto"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)} // Update search state on input change
-                    />
-                </div>
+            {/* Search Bar */}
+            <div className="flex justify-center mb-8">
+                <input
+                    type="text"
+                    placeholder="Search permissions"
+                    className="form-input w-full max-w-md border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
             </div>
 
-            {/* Table for permissions */}
-            <div className="overflow-x-auto">
-                <table className="min-w-full table-auto">
-                    <thead>
-                        <tr className="">
-                            <th className="py-3 px-6 text-center dark:bg-transparent  bg-gray-200">Permission Name</th>
-                            <th className="py-3 px-6 text-center dark:bg-transparent  bg-gray-200">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {permissions.length > 0 ? (
-                            permissions
-                                .filter((perm) => perm.name.toLowerCase().includes(search.toLowerCase())) // Filter based on search term
-                                .map((perm) => (
-                                    <tr key={perm.id} className="border-b">
-                                        <td className="py-3 px-6 text-center">{perm.name}</td>
-                                        <td className="py-3 px-6 flex space-x-4 items-center justify-center text-center">
-                                            <button
-                                                className="btn btn-warning"
-                                                onClick={() =>
-                                                    Swal.fire({
-                                                        title: 'Edit Permission',
-                                                        html: `
-                                                            <input id="editPermissionName" class="swal2-input" value="${perm.name}" required />
-                                                        `,
-                                                        focusConfirm: false,
-                                                        showCancelButton: true, // Show Cancel button
-                                                        cancelButtonText: 'Cancel', // Text for the Cancel button
-                                                        confirmButtonText: 'Edit Permission', // Text for the Confirm button
-                                                        preConfirm: () => {
-                                                            const permissionName = (document.getElementById('editPermissionName') as HTMLInputElement).value.trim();
-                                                            if (!permissionName) {
-                                                                Swal.showValidationMessage('Permission Name is required!');
-                                                                return false;
-                                                            }
-
-                                                            const updatedPermission: PermissionData = {
-                                                                ...perm,
-                                                                name: permissionName,
-                                                            };
-
-                                                            handleEditPermission(updatedPermission);
-                                                        },
-                                                    })
-                                                }
-                                            >
-                                                <FaPencilAlt /> {/* Edit */}
-                                            </button>
-                                            <button className="btn btn-danger" onClick={() => handleDeletePermission(perm.id)}>
-                                                <FaTrash /> {/* Delete */}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                        ) : (
-                            <tr>
-                                <td colSpan={2} className="py-3 px-6 text-center dark:text-white-light">
-                                    No permissions available.
-                                </td>
+            {/* Permissions Table */}
+            <div className="overflow-x-auto bg-white shadow-md rounded-md p-6 dark:bg-transparent">
+                {filteredPermissions.length > 0 ? (
+                    <table className="min-w-full table-auto">
+                        <thead>
+                            <tr className="bg-gray-100 flex items-center text-center justify-between px-5">
+                                <th className="px-4 py-2 border-b">Permission Name</th>
+                                <th className="px-4 py-2 border-b">Type</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredPermissions.map((perm) => (
+                                <tr key={perm.id} className="border-b hover:bg-gray-100 flex justify-between w-full items-center text-center">
+                                    <td className="px-4 py-2">{perm.name}</td>
+                                    <td className="px-4 py-2 text-center">
+                                        <span className="px-2 py-1 text-xs text-white bg-primary rounded-full">Permission</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    <div className="text-center text-gray-500">No permissions found. Try adjusting your search criteria.</div>
+                )}
             </div>
         </div>
     );
