@@ -1,5 +1,8 @@
 import { lazy } from 'react';
 import ProtectedRoute from '../components/ProtectedRoute';
+import Properties from '../pages/properties/Properties';
+import AddProperties from '../pages/properties/AddProperties';
+import Subscription from '../pages/Subscription/Subscription';
 
 const Roles = lazy(() => import('../pages/usermanagement/Roles'));
 const Users = lazy(() => import('../pages/usermanagement/Users'));
@@ -16,6 +19,24 @@ const routes = [
         element: (
             <ProtectedRoute>
                 <Index />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/properties',
+        element: (
+            <ProtectedRoute>
+                <Properties />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/properties/add',
+        element: (
+            <ProtectedRoute>
+                <AddProperties />
             </ProtectedRoute>
         ),
         layout: 'default',
@@ -43,6 +64,15 @@ const routes = [
         element: (
             <ProtectedRoute>
                 <Users />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/subscriptions',
+        element: (
+            <ProtectedRoute>
+                <Subscription />
             </ProtectedRoute>
         ),
         layout: 'default',

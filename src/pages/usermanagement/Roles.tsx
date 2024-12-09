@@ -1,175 +1,260 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Modal, Box, Button, TextField, Checkbox, FormControlLabel, CircularProgress, Grid, FormGroup, Typography, Tooltip } from '@mui/material';
+import { FaTrash, FaPencilAlt, FaEye, FaPlus } from 'react-icons/fa';
 import Swal from 'sweetalert2';
-import { FaTrash, FaPencilAlt } from 'react-icons/fa';
 import { useRolesListing } from '../../hooks/useRolesListing';
+import { usePermissionsListing } from '../../hooks/usePermissionsListing';
 import { useRoleDelete } from '../../hooks/roles/useRoleDelete';
 import { useAddRole } from '../../hooks/roles/useAddRole';
+import { useGetRoleById } from '../../hooks/roles/useGetRoleById';
 import { useUpdateRole } from '../../hooks/roles/useUpdateRole';
 
+const modalStyle = {
+    position: 'absolute' as 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 500,
+    bgcolor: 'background.paper',
+    boxShadow: 24,
+    p: 4,
+    borderRadius: 2,
+};
+
 const Roles: React.FC = () => {
+    const [currentRole, setCurrentRole] = useState({
+        id: '',
+        name: '',
+        permissions: [] as string[],
+    });
+
     const { roles, loading: rolesLoading, error: rolesError, refetchRoles } = useRolesListing();
+    const { permissions, loading: permissionsLoading, error: permissionsError } = usePermissionsListing();
     const { deleteRole, loading: deleteLoading, error: deleteError } = useRoleDelete();
     const { addRole, loading: addLoading, error: addError } = useAddRole();
     const { updateRole, loading: updateLoading, error: updateError } = useUpdateRole();
-    const [search, setSearch] = useState<string>('');
+    const { role, loading: roleLoading, error: roleError, refetchRole } = useGetRoleById(currentRole.id);
 
-    // Filter roles based on search query
-    const filteredRoles = roles.filter((role) => role.name.toLowerCase().includes(search.toLowerCase()));
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [viewOnly, setViewOnly] = useState(false);
 
-    // Handle Add Role
-    const handleAddRole = async (newRole: { name: string }) => {
-        if (roles.some((role) => role.name.toLowerCase() === newRole.name.toLowerCase())) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Role Already Exists',
-                text: 'Please choose a different name for the role.',
-            });
+    // Handle Modal Open/Close
+    const handleOpenModal = (role?: any, viewOnly = false) => {
+        setCurrentRole(role || { id: '', name: '', permissions: [] });
+        setViewOnly(viewOnly);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => setIsModalOpen(false);
+
+    const handleFormSubmit = async () => {
+        if (!currentRole.name.trim()) {
+            alert('Role name is required!');
             return;
         }
 
-        const success = await addRole(newRole);
-        if (success) {
-            Swal.fire('Success', 'Role added successfully.', 'success');
-            refetchRoles(); // Refetch roles after adding
+        // Map string-based permissions to expected objects or IDs
+        const mappedPermissions = currentRole.permissions.map((permissionName) => {
+            const matchedPermission = permissions.find((perm) => perm.name === permissionName);
+            return matchedPermission ? matchedPermission.id : permissionName; // Use _id if found, fallback to string
+        });
+
+        let success = false;
+
+        if (currentRole.id) {
+            // Update role with mapped permissions
+            success = await updateRole({
+                id: currentRole.id,
+                name: currentRole.name,
+                permissions: mappedPermissions,
+            });
         } else {
-            Swal.fire('Error', addError || 'Failed to add role.', 'error');
+            // Add role with mapped permissions
+            success = await addRole({
+                name: currentRole.name,
+                permissions: mappedPermissions,
+            });
+        }
+
+        if (success) {
+            Swal.fire({
+                title: 'Success!',
+                text: `The role has been ${currentRole.id ? 'updated' : 'added'}.`,
+                icon: 'success',
+            });
+            refetchRoles();
+            handleCloseModal();
+        } else {
+            Swal.fire({
+                title: 'Error!',
+                text: currentRole.id ? updateError || 'Failed to update role' : addError || 'Failed to add role',
+                icon: 'error',
+            });
         }
     };
 
-    // Handle Update Role
-    const handleUpdateRole = async (id: string, currentName: string) => {
-        Swal.fire({
-            title: 'Edit Role',
-            html: `<input id="editRoleName" class="swal2-input" value="${currentName}" required />`,
-            focusConfirm: false,
-            showCancelButton: true,
-            cancelButtonText: 'Cancel',
-            confirmButtonText: 'Update',
-            preConfirm: () => {
-                const roleName = (document.getElementById('editRoleName') as HTMLInputElement).value.trim();
-                if (!roleName) {
-                    Swal.showValidationMessage('Role Name is required!');
-                    return false;
-                }
-                return roleName;
-            },
-        }).then(async (result) => {
-            if (result.isConfirmed && result.value) {
-                const roleName = result.value;
-                if (roles.some((role) => role.name.toLowerCase() === roleName.toLowerCase() && role.id !== id)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Role Already Exists',
-                        text: 'Please choose a different name for the role.',
-                    });
-                    return;
-                }
-
-                const success = await updateRole({ id, name: roleName });
-                if (success) {
-                    Swal.fire('Success', 'Role updated successfully.', 'success');
-                    refetchRoles(); // Refetch roles after updating
-                } else {
-                    Swal.fire('Error', updateError || 'Failed to update role.', 'error');
-                }
-            }
-        });
+    // Handle Input Changes
+    const handleInputChange = (field: string, value: any) => {
+        setCurrentRole((prev) => ({ ...prev, [field]: value }));
     };
 
     // Handle Delete Role
-    const handleDeleteRole = (id: string) => {
-        Swal.fire({
+    const handleDeleteRole = async (roleId: string) => {
+        const result = await Swal.fire({
             title: 'Are you sure?',
-            text: 'This action cannot be undone!',
+            text: 'You will not be able to undo this action!',
             icon: 'warning',
             showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
             confirmButtonText: 'Yes, delete it!',
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                const success = await deleteRole(id);
-                if (success) {
-                    Swal.fire('Deleted!', 'Role has been deleted successfully.', 'success');
-                    refetchRoles(); // Refetch roles to update the state
-                } else {
-                    Swal.fire('Error!', deleteError || 'Failed to delete the role.', 'error');
-                }
-            }
         });
+
+        if (result.isConfirmed) {
+            const success = await deleteRole(roleId);
+            if (success) {
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: 'The role has been deleted.',
+                    icon: 'success',
+                });
+                refetchRoles();
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: deleteError || 'Failed to delete role',
+                    icon: 'error',
+                });
+            }
+        }
     };
 
-    if (rolesLoading) {
-        return <div className="text-center py-10">Loading roles...</div>;
-    }
-
-    if (rolesError) {
-        return <div className="text-center py-10 text-red-500">{rolesError}</div>;
-    }
+    // Populate `currentRole` when a role is fetched by ID
+    useEffect(() => {
+        if (role) {
+            setCurrentRole({
+                id: role.id,
+                name: role.name,
+                permissions: role.permissions,
+            });
+        }
+    }, [role]);
 
     return (
-        <div className="flex flex-col py-10 dark:bg-transparent">
-            {/* Header */}
-            <div className="text-center mb-10">
-                <h2 className="text-3xl font-bold mb-2">Roles</h2>
-                <p className="text-gray-500">Manage roles with ease. Use the buttons to edit or delete existing roles or add a new role below.</p>
+        <div>
+            <div className="panel mt-6">
+                <div className="flex justify-between items-center mb-5">
+                    <h5 className="font-bold text-2xl dark:text-white-light ml-2 flex items-center">
+                        Roles
+                        <button
+                            type="button"
+                            onClick={() => handleOpenModal(undefined, false)}
+                            className="ml-3 rounded-full text-primary border-primary border p-1 hover:text-white hover:bg-primary transition-all duration-300"
+                        >
+                            <FaPlus />
+                        </button>
+                    </h5>
+                </div>
+
+                <div className="table-responsive mb-5 overflow-x-auto">
+                    <table className="min-w-full">
+                        <thead className="bg-gray-200">
+                            <tr className="bg-gray-100 flex items-center text-center justify-between px-5">
+                                <th className="p-2">Role</th>
+                                <th className="p-2">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rolesLoading ? (
+                                <tr>
+                                    <td colSpan={2} className="text-center">
+                                        <CircularProgress />
+                                    </td>
+                                </tr>
+                            ) : rolesError ? (
+                                <tr>
+                                    <td colSpan={2} className="text-center text-red-500">
+                                        {rolesError}
+                                    </td>
+                                </tr>
+                            ) : roles.length === 0 ? (
+                                <tr>
+                                    <td colSpan={2} className="text-center">
+                                        No roles available
+                                    </td>
+                                </tr>
+                            ) : (
+                                roles.map((role) => (
+                                    <tr key={role.id} className="border-b hover:bg-gray-100 flex justify-between w-full items-center text-center">
+                                        <td className="p-2">{role.name}</td>
+                                        <td>
+                                            <div className="flex gap-2">
+                                                <button type="button" onClick={() => handleOpenModal(role, false)} className="text-primary">
+                                                    <FaPencilAlt />
+                                                </button>
+                                                <button type="button" onClick={() => handleDeleteRole(role.id)} className="text-danger">
+                                                    {deleteLoading ? <CircularProgress size={20} /> : <FaTrash />}
+                                                </button>
+                                                <button type="button" onClick={() => handleOpenModal(role, true)} className="text-info">
+                                                    <FaEye />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {/* Search Bar and Add Role Button */}
-            <div className="flex justify-between items-center mb-8">
-                <input
-                    type="text"
-                    placeholder="Search roles"
-                    className="form-input w-full max-w-md border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
-                <button
-                    className="btn btn-primary py-2 px-4 ml-4 hover:bg-white hover:text-primary hover:border-primary"
-                    onClick={() =>
-                        Swal.fire({
-                            title: 'Add Role',
-                            html: `<input id="roleName" class="swal2-input" placeholder="Role Name" required />`,
-                            focusConfirm: false,
-                            showCancelButton: true,
-                            cancelButtonText: 'Cancel',
-                            confirmButtonText: 'Add',
-                            preConfirm: () => {
-                                const roleName = (document.getElementById('roleName') as HTMLInputElement).value.trim();
-                                if (!roleName) {
-                                    Swal.showValidationMessage('Role Name is required!');
-                                    return false;
-                                }
-
-                                handleAddRole({ name: roleName });
-                            },
-                        })
-                    }
-                >
-                    {addLoading ? 'Adding...' : 'Add Role'}
-                </button>
-            </div>
-
-            {/* Roles List */}
-            <div className="bg-white shadow-md rounded-md p-6 dark:bg-transparent">
-                {filteredRoles.length > 0 ? (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredRoles.map((role) => (
-                            <div key={role.id} className="flex items-center justify-between p-4 bg-gray-100 border border-gray-300 rounded-md dark:bg-transparent">
-                                <span className="text-lg font-medium">{role.name}</span>
-                                <div className="flex space-x-2">
-                                    <button className="btn btn-warning text-sm dark:bg-transparent" onClick={() => handleUpdateRole(role.id, role.name)} disabled={updateLoading}>
-                                        <FaPencilAlt />
-                                    </button>
-                                    <button className="btn btn-danger text-sm dark:bg-transparent" onClick={() => handleDeleteRole(role.id)} disabled={deleteLoading}>
-                                        <FaTrash />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+            <Modal open={isModalOpen} onClose={handleCloseModal}>
+                <Box sx={modalStyle}>
+                    <h2>{currentRole.id ? (viewOnly ? 'View Role' : 'Edit Role') : 'Add Role'}</h2>
+                    <TextField label="Role Name" value={currentRole.name} onChange={(e) => handleInputChange('name', e.target.value)} fullWidth disabled={viewOnly} margin="normal" />
+                    <div className="permissions">
+                        <Typography variant="h6" sx={{ mt: 2 }}>
+                            Permissions
+                        </Typography>
+                        {permissionsLoading ? (
+                            <CircularProgress />
+                        ) : permissionsError ? (
+                            <p className="text-red-500">{permissionsError}</p>
+                        ) : (
+                            <FormGroup sx={{ mt: 2 }}>
+                                <Grid container>
+                                    {permissions.map((perm) => (
+                                        <Grid item xs={12} sm={6} md={5} key={perm.id}>
+                                            <Tooltip title={perm.name || 'No description available'}>
+                                                <FormControlLabel
+                                                    control={
+                                                        <Checkbox
+                                                            checked={currentRole.permissions.includes(perm.name)}
+                                                            onChange={(e) => {
+                                                                const updatedPermissions = e.target.checked
+                                                                    ? [...currentRole.permissions, perm.name]
+                                                                    : currentRole.permissions.filter((name) => name !== perm.name);
+                                                                handleInputChange('permissions', updatedPermissions);
+                                                            }}
+                                                            disabled={viewOnly}
+                                                        />
+                                                    }
+                                                    label={perm.name.replace(/_/g, ' ')}
+                                                />
+                                            </Tooltip>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            </FormGroup>
+                        )}
                     </div>
-                ) : (
-                    <div className="text-center text-gray-500">No roles found. Try adjusting your search criteria.</div>
-                )}
-            </div>
+                    {!viewOnly && (
+                        <Button variant="contained" color="primary" onClick={handleFormSubmit} sx={{ mt: 2 }} disabled={addLoading || updateLoading}>
+                            {addLoading || updateLoading ? <CircularProgress size={24} /> : currentRole.id ? 'Update Role' : 'Add Role'}
+                        </Button>
+                    )}
+                </Box>
+            </Modal>
         </div>
     );
 };

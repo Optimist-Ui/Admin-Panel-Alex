@@ -11,6 +11,9 @@ import IconCaretDown from '../Icon/IconCaretDown';
 import IconMenuDashboard from '../Icon/Menu/IconMenuDashboard';
 import IconMinus from '../Icon/IconMinus';
 import IconMenuUsers from '../Icon/Menu/IconMenuUsers';
+import IconHome from '../Icon/IconHome';
+import { MdSubscriptions } from 'react-icons/md';
+import { AiOutlineHome } from 'react-icons/ai';
 
 const Sidebar = () => {
     const [currentMenu, setCurrentMenu] = useState<string>('');
@@ -59,7 +62,7 @@ const Sidebar = () => {
                     <div className="flex justify-between items-center px-4 py-3">
                         <NavLink to="/" className="main-logo flex items-center shrink-0">
                             <img className="w-8 ml-[5px] flex-none" src="/assets/images/logo.svg" alt="logo" />
-                            <span className="text-2xl ltr:ml-1.5 rtl:mr-1.5 font-semibold align-middle lg:inline dark:text-white-light">{t('VRISTO')}</span>
+                            <span className="text-2xl ltr:ml-1.5 rtl:mr-1.5 font-semibold align-middle lg:inline dark:text-white-light">{t('ImmoWorld')}</span>
                         </NavLink>
 
                         <button
@@ -82,6 +85,7 @@ const Sidebar = () => {
                                     </button>
                                 </NavLink>
                             </li>
+
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <IconMinus className="w-4 h-5 flex-none hidden" />
                                 <span>{t('User Managment')}</span>
@@ -110,6 +114,34 @@ const Sidebar = () => {
                                         </li>
                                     </ul>
                                 </AnimateHeight>
+                            </li>
+                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <IconMinus className="w-4 h-5 flex-none hidden" />
+                                <span>{t('Property Managment')}</span>
+                            </h2>
+                            <li className="menu nav-item">
+                                <NavLink to="/properties" className="main-logo flex items-center shrink-0">
+                                    <button type="button" className={`${currentMenu === 'properties' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('properties')}>
+                                        <div className="flex items-center">
+                                            <AiOutlineHome className="group-hover:!text-primary shrink-0" />
+                                            <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('Properties')}</span>
+                                        </div>
+                                    </button>
+                                </NavLink>
+                            </li>
+                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <IconMinus className="w-4 h-5 flex-none hidden" />
+                                <span>{t('Plans Management')}</span>
+                            </h2>
+                            <li className="menu nav-item">
+                                <NavLink to="/subscriptions" className="main-logo flex items-center shrink-0">
+                                    <button type="button" className={`${currentMenu === 'plan' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('plan')}>
+                                        <div className="flex items-center">
+                                            <MdSubscriptions className="group-hover:!text-primary shrink-0" />
+                                            <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('Plans')}</span>
+                                        </div>
+                                    </button>
+                                </NavLink>
                             </li>
                         </ul>
                     </PerfectScrollbar>

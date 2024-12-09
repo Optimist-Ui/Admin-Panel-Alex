@@ -3,24 +3,30 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-interface UpdateRoleParams {
+interface Role {
     id: string;
     name: string;
+    permissions: string[];
 }
 
 export const useUpdateRole = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    const updateRole = async (params: UpdateRoleParams): Promise<boolean> => {
+    const updateRole = async (role: Role): Promise<boolean> => {
         setLoading(true);
         setError(null);
+
+        console.log(role);
 
         try {
             const authToken = localStorage.getItem('authToken');
             const response = await axios.put(
-                `${API_URL}/api/roles/${params.id}`,
-                { name: params.name },
+                `${API_URL}/api/roles/${role.id}`,
+                {
+                    name: role.name,
+                    permissions: role.permissions,
+                },
                 {
                     headers: {
                         Authorization: `Bearer ${authToken}`,

@@ -1,6 +1,8 @@
 /* Animate css */
 @import './assets/css/animate.css';
 
+/* Custom fade-in and fade-out animations with reduced duration */
+
 /* tippy css */
 @import './assets/css/tippy.css';
 

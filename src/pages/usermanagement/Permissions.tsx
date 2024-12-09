@@ -17,7 +17,7 @@ const Permissions = () => {
     }
 
     return (
-        <div className="flex flex-col py-10">
+        <div className="flex flex-col py-10 max-w-[80%] mx-auto">
             {/* Header */}
             <div className="text-center mb-10">
                 <h2 className="text-3xl font-bold mb-2">Permissions</h2>
