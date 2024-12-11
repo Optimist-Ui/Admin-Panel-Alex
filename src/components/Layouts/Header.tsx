@@ -8,21 +8,23 @@ import Dropdown from '../Dropdown';
 import IconMenu from '../Icon/IconMenu';
 import Swal from 'sweetalert2';
 
-import IconSearch from '../Icon/IconSearch';
-import IconXCircle from '../Icon/IconXCircle';
 import IconSun from '../Icon/IconSun';
 import IconMoon from '../Icon/IconMoon';
 import IconLaptop from '../Icon/IconLaptop';
 
 import IconUser from '../Icon/IconUser';
-import IconMail from '../Icon/IconMail';
 import IconLogout from '../Icon/IconLogout';
 import IconMenuDashboard from '../Icon/Menu/IconMenuDashboard';
 import IconCaretDown from '../Icon/IconCaretDown';
 import { useAuth } from '../../context/AuthContext';
+import { AiOutlineHome } from 'react-icons/ai';
+import { MdSubscriptions } from 'react-icons/md';
+import { useGetAdminDataByID } from '../../hooks/admin/useGetAdminDataByID';
 
 const Header = () => {
     const { logout } = useAuth();
+    const userId = localStorage.getItem('id') || ''; // Fetch user ID from localStorage
+    const { adminData, loading, error } = useGetAdminDataByID(userId);
     const navigate = useNavigate();
     const location = useLocation();
     useEffect(() => {
@@ -51,8 +53,6 @@ const Header = () => {
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
     const dispatch = useDispatch();
 
-    const [search, setSearch] = useState(false);
-
     const { t } = useTranslation();
 
     const handleLogout = () => {
@@ -80,7 +80,7 @@ const Header = () => {
                     <div className="horizontal-logo flex lg:hidden justify-between items-center ltr:mr-2 rtl:ml-2">
                         <Link to="/" className="main-logo flex items-center shrink-0">
                             <img className="w-8 ltr:-ml-1 rtl:-mr-1 inline" src="/assets/images/logo.svg" alt="logo" />
-                            <span className="text-2xl ltr:ml-1.5 rtl:mr-1.5  font-semibold  align-middle hidden md:inline dark:text-white-light transition-all duration-300">VRISTO</span>
+                            <span className="text-2xl ltr:ml-1.5 rtl:mr-1.5  font-semibold  align-middle hidden md:inline dark:text-white-light transition-all duration-300">ImmoWorld</span>
                         </Link>
                         <button
                             type="button"
@@ -94,33 +94,7 @@ const Header = () => {
                     </div>
 
                     <div className="sm:flex-1 ltr:sm:ml-0 ltr:ml-auto sm:rtl:mr-0 rtl:mr-auto flex items-center space-x-1.5 lg:space-x-2 rtl:space-x-reverse dark:text-[#d0d2d6]">
-                        <div className="sm:ltr:mr-auto sm:rtl:ml-auto">
-                            <form
-                                className={`${search && '!block'} sm:relative absolute inset-x-0 sm:top-0 top-1/2 sm:translate-y-0 -translate-y-1/2 sm:mx-0 mx-4 z-10 sm:block hidden`}
-                                onSubmit={() => setSearch(false)}
-                            >
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        className="form-input ltr:pl-9 rtl:pr-9 ltr:sm:pr-4 rtl:sm:pl-4 ltr:pr-9 rtl:pl-9 peer sm:bg-transparent bg-gray-100 placeholder:tracking-widest"
-                                        placeholder="Search..."
-                                    />
-                                    <button type="button" className="absolute w-9 h-9 inset-0 ltr:right-auto rtl:left-auto appearance-none peer-focus:text-primary">
-                                        <IconSearch className="mx-auto" />
-                                    </button>
-                                    <button type="button" className="hover:opacity-80 sm:hidden block absolute top-1/2 -translate-y-1/2 ltr:right-2 rtl:left-2" onClick={() => setSearch(false)}>
-                                        <IconXCircle />
-                                    </button>
-                                </div>
-                            </form>
-                            <button
-                                type="button"
-                                onClick={() => setSearch(!search)}
-                                className="search_btn sm:hidden p-2 rounded-full bg-white-light/40 dark:bg-dark/40 hover:bg-white-light/90 dark:hover:bg-dark/60"
-                            >
-                                <IconSearch className="w-4.5 h-4.5 mx-auto dark:text-[#d0d2d6]" />
-                            </button>
-                        </div>
+                        <div className="sm:ltr:mr-auto sm:rtl:ml-auto"></div>
                         <div>
                             {themeConfig.theme === 'light' ? (
                                 <button
@@ -169,21 +143,24 @@ const Header = () => {
                                 offset={[0, 8]}
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="relative group block"
-                                button={<img className="w-9 h-9 rounded-full object-cover saturate-50 group-hover:saturate-100" src="/assets/images/user-profile.jpeg" alt="userProfile" />}
+                                button={<img className="w-9 h-9 rounded-full object-cover saturate-50 group-hover:saturate-100" src="/assets/images/user-profile.png" alt="userProfile" />}
                             >
                                 <ul className="text-dark dark:text-white-dark !py-0 w-[230px] font-semibold dark:text-white-light/90">
                                     <li>
                                         <div className="flex items-center px-4 py-4">
-                                            <img className="rounded-md w-10 h-10 object-cover" src="/assets/images/user-profile.jpeg" alt="userProfile" />
-                                            <div className="ltr:pl-4 rtl:pr-4 truncate">
-                                                <h4 className="text-base">
-                                                    John Doe
-                                                    <span className="text-xs bg-success-light rounded text-success px-1 ltr:ml-2 rtl:ml-2">Pro</span>
-                                                </h4>
-                                                <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white">
-                                                    johndoe@gmail.com
-                                                </button>
-                                            </div>
+                                            <img className="rounded-md w-10 h-10 object-cover" src="/assets/images/user-profile.png" alt="userProfile" />
+                                            {loading ? (
+                                                <p>Loading...</p>
+                                            ) : error ? (
+                                                <p className="text-red-500">{error}</p>
+                                            ) : (
+                                                <div className="ltr:pl-4 rtl:pr-4 truncate">
+                                                    <h4 className="text-base">{adminData?.name || 'N/A'}</h4>
+                                                    <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white">
+                                                        {adminData?.email || 'N/A'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </li>
                                     <li>
@@ -192,18 +169,6 @@ const Header = () => {
                                             Profile
                                         </Link>
                                     </li>
-                                    <li>
-                                        <Link to="/apps/mailbox" className="dark:hover:text-white">
-                                            <IconMail className="w-4.5 h-4.5 ltr:mr-2 rtl:ml-2 shrink-0" />
-                                            Inbox
-                                        </Link>
-                                    </li>
-                                    {/* <li>
-                                        <Link to="/auth/boxed-lockscreen" className="dark:hover:text-white">
-                                            <IconLockDots className="w-4.5 h-4.5 ltr:mr-2 rtl:ml-2 shrink-0" />
-                                            Lock Screen
-                                        </Link>
-                                    </li> */}
                                     <li
                                         onClick={handleLogout}
                                         className="border-t cursor-pointer border-white-light dark:border-white-light/10 text-danger flex justify-start items-center text-start !p-3"
@@ -251,6 +216,36 @@ const Header = () => {
                             </li>
                         </ul>
                     </li>
+                    <NavLink to="/properties">
+                        <li className="menu nav-item relative">
+                            <button type="button" className="nav-link">
+                                <div className="flex items-center">
+                                    <AiOutlineHome className="shrink-0" />
+                                    <span className="px-1">{t('Properties')}</span>
+                                </div>
+                            </button>
+                        </li>
+                    </NavLink>
+                    <NavLink to="/plans">
+                        <li className="menu nav-item relative">
+                            <button type="button" className="nav-link">
+                                <div className="flex items-center">
+                                    <MdSubscriptions className="shrink-0" />
+                                    <span className="px-1">{t('Plans')}</span>
+                                </div>
+                            </button>
+                        </li>
+                    </NavLink>
+                    <NavLink to="/profile">
+                        <li className="menu nav-item relative">
+                            <button type="button" className="nav-link">
+                                <div className="flex items-center">
+                                    <IconUser className="group-hover:!text-primary shrink-0" />
+                                    <span className="px-1">{t('Profile Management')}</span>
+                                </div>
+                            </button>
+                        </li>
+                    </NavLink>
                 </ul>
             </div>
         </header>

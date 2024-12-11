@@ -7,6 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 interface AuthContextType {
     authToken: string | null;
     role: string | null;
+    id: string | null;
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
     loading: boolean;
@@ -25,19 +26,39 @@ interface AuthProviderProps {
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('authToken')); // JWT token
     const [role, setRole] = useState<string | null>(() => localStorage.getItem('role')); // User role
+    const [id, setId] = useState<string | null>(() => localStorage.getItem('id')); // User role
     const [loading, setLoading] = useState<boolean>(false); // Loading state
 
     useEffect(() => {
         // Check localStorage for auth token and role
         const savedToken = localStorage.getItem('authToken');
         const savedRole = localStorage.getItem('role');
+        const tokenTimestamp = localStorage.getItem('tokenTimestamp');
 
-        if (savedToken && savedRole) {
-            setAuthToken(savedToken);
-            setRole(savedRole);
+        if (savedToken && savedRole && tokenTimestamp) {
+            const isTokenExpired = Date.now() - parseInt(tokenTimestamp, 10) > 45 * 60 * 1000; // 45 minutes
+            if (isTokenExpired) {
+                logout();
+            } else {
+                setAuthToken(savedToken);
+                setRole(savedRole);
+            }
         }
 
         setLoading(false);
+
+        // Periodic check for token expiration
+        const interval = setInterval(() => {
+            const tokenTimestamp = localStorage.getItem('tokenTimestamp');
+            if (tokenTimestamp) {
+                const isTokenExpired = Date.now() - parseInt(tokenTimestamp, 10) > 45 * 60 * 1000; // 45 minutes
+                if (isTokenExpired) {
+                    logout();
+                }
+            }
+        }, 60 * 1000); // Check every minute
+
+        return () => clearInterval(interval); // Cleanup interval on component unmount
     }, []);
 
     // Function to refresh the auth token
@@ -53,12 +74,12 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
             const response = await axios.post(`${API_URL}/api/users/refresh-token`, { refreshToken });
             const { token, newRefreshToken } = response.data.data;
-
             setAuthToken(token);
             setRole(response.data.data.user.role);
 
             localStorage.setItem('authToken', token);
             localStorage.setItem('refreshToken', newRefreshToken); // Update refresh token
+            localStorage.setItem('tokenTimestamp', Date.now().toString()); // Update timestamp
 
             setLoading(false);
         } catch (error: any) {
@@ -75,11 +96,17 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const response = await axios.post(`${API_URL}/api/users/login`, { email, password });
             const { token, refreshToken } = response.data.data;
             const { role } = response.data.data.user;
+            const { id } = response.data.data.user;
+
             setAuthToken(token);
             setRole(role);
+            setId(id);
 
             localStorage.setItem('authToken', token);
+            localStorage.setItem('role', role);
+            localStorage.setItem('id', id);
             localStorage.setItem('refreshToken', refreshToken); // Store the refresh token
+            localStorage.setItem('tokenTimestamp', Date.now().toString()); // Store timestamp
 
             setLoading(false); // Set loading to false after successful login
         } catch (error: any) {
@@ -93,12 +120,15 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const logout = (): void => {
         setAuthToken(null);
         setRole(null);
+        setId(null);
         localStorage.removeItem('authToken');
         localStorage.removeItem('role');
+        localStorage.removeItem('id');
         localStorage.removeItem('refreshToken'); // Remove refresh token
+        localStorage.removeItem('tokenTimestamp'); // Remove timestamp
     };
 
-    return <AuthContext.Provider value={{ authToken, role, login, logout, loading, refreshAuthToken }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ authToken, role, id, login, logout, loading, refreshAuthToken }}>{children}</AuthContext.Provider>;
 };
 
 // Custom hook to access AuthContext

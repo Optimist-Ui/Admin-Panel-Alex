@@ -111,6 +111,16 @@ const LoginCover = () => {
                                     {loading ? 'Signing in...' : 'Sign in'}
                                 </button>
                             </form>
+                            <div className="relative my-7 text-center md:mb-9">
+                                <span className="absolute inset-x-0 top-1/2 h-px w-full -translate-y-1/2 bg-white-light dark:bg-white-dark"></span>
+                                <span className="relative bg-white px-2 font-bold uppercase text-white-dark dark:bg-dark dark:text-white-light">or</span>
+                            </div>
+                            <div className="text-center dark:text-white">
+                                Don't have an account ?&nbsp;
+                                <Link to="/signup" className="uppercase text-primary underline transition hover:text-black dark:hover:text-white">
+                                    SIGN UP
+                                </Link>
+                            </div>
                         </div>
                         <p className="absolute bottom-6 w-full text-center dark:text-white">© {new Date().getFullYear()}.Immoworld All Rights Reserved.</p>
                     </div>

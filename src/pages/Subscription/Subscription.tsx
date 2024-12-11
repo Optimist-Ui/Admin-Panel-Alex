@@ -136,9 +136,9 @@ const Subscriptions = (): JSX.Element => {
                     <div className="ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                     </div>
-                    <Button variant="contained" color="primary" onClick={handleAddOpen} disabled={addLoading}>
+                    <button className="btn btn-primary py-2 hover:bg-white hover:text-primary hover:border-primary" onClick={handleAddOpen} disabled={addLoading}>
                         Add New Subscription
-                    </Button>
+                    </button>
                 </div>
 
                 <div className="datatables">
@@ -245,10 +245,10 @@ const Subscriptions = (): JSX.Element => {
                             margin="normal"
                         />
                         <Box mt={3} display="flex" justifyContent="space-between">
-                            <Button variant="contained" color="primary" onClick={handleModalSubmit}>
+                            <button className="btn btn-primary py-2 hover:bg-white hover:text-primary hover:border-primary" onClick={handleModalSubmit}>
                                 {isEditMode ? 'Save Changes' : 'Add Subscription'}
-                            </Button>
-                            <Button variant="outlined" onClick={handleModalClose}>
+                            </button>
+                            <Button variant="outlined" className="btn btn-primary py-2 hover:bg-white hover:text-primary hover:border-primary" onClick={handleModalClose}>
                                 Cancel
                             </Button>
                         </Box>

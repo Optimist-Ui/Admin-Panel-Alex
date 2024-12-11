@@ -3,6 +3,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import Properties from '../pages/properties/Properties';
 import AddProperties from '../pages/properties/AddProperties';
 import Subscription from '../pages/Subscription/Subscription';
+import Profile from '../pages/profile/Profile';
 
 const Roles = lazy(() => import('../pages/usermanagement/Roles'));
 const Users = lazy(() => import('../pages/usermanagement/Users'));
@@ -69,10 +70,19 @@ const routes = [
         layout: 'default',
     },
     {
-        path: '/subscriptions',
+        path: '/plans',
         element: (
             <ProtectedRoute>
                 <Subscription />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/profile',
+        element: (
+            <ProtectedRoute>
+                <Profile />
             </ProtectedRoute>
         ),
         layout: 'default',
@@ -95,7 +105,7 @@ const routes = [
     {
         path: '*',
         element: <Error404 />,
-        layout: 'default',
+        layout: 'blank',
     },
 ];
 

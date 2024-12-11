@@ -1,4 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
+import { Modal, Box, Button, TextField, Checkbox, FormControlLabel, CircularProgress, Grid, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '../../store/themeConfigSlice';
@@ -30,6 +31,10 @@ const Users = (): JSX.Element => {
         direction: 'asc',
     });
 
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalData, setModalData] = useState<Partial<User>>({});
+    const [isEditMode, setIsEditMode] = useState(false);
+
     useEffect(() => {
         const lowercasedSearch = search.toLowerCase();
         const filtered = users.filter((user) => [user.id, user.name, user.email, user.sellerType, user.isAlreadyAgent, user.isVerified].join(' ').toLowerCase().includes(lowercasedSearch));
@@ -42,70 +47,37 @@ const Users = (): JSX.Element => {
         setRecordsData(filteredUsers.slice(from, to));
     }, [page, pageSize, filteredUsers]);
 
-    const handleEdit = (user: User): void => {
-        Swal.fire({
-            title: 'Edit User',
-            html: `
-                <div style="display: flex; color: #333; flex-direction: column; gap: 10px;">
-                    <input id="swal-input1" class="swal2-input" placeholder="Name" autofocus  value="${user.name}" required />
-                    <input id="swal-input2" class="swal2-input" placeholder="Email" value="${user.email}" required />
-                    <input id="swal-input3" class="swal2-input" placeholder="Seller Type" value="${user.sellerType || ''}" />
-                    <div  class="flex  justify-center  text-[#333] text-start text-nowrap gap-5 my-5 grid-flow-row items-center">
-                    <label class="flex justify-center items-center">
-                        <input id="swal-input4" type="checkbox" class="mx-2 cursor-pointer" style="transform: scale(1.5)" ${user.isAlreadyAgent ? 'checked' : ''} />
-                        Already Agent
-                    </label>
-                    <label class="flex justify-center items-center">
-                        <input id="swal-input5" type="checkbox" class="mx-2 cursor-pointer" style="transform: scale(1.5)" ${user.isVerified ? 'checked' : ''} />
-                        Verified
-                    </label>
-                </div>
-                
-                </div>
-            `,
-            confirmButtonText: 'Save',
-            showCancelButton: true,
-            preConfirm: () => {
-                const name = (document.getElementById('swal-input1') as HTMLInputElement).value.trim();
-                const email = (document.getElementById('swal-input2') as HTMLInputElement).value.trim();
-                const sellerType = (document.getElementById('swal-input3') as HTMLInputElement).value.trim();
-                const is_already_agent = (document.getElementById('swal-input4') as HTMLInputElement).checked;
-                const isVerified = (document.getElementById('swal-input5') as HTMLInputElement).checked;
-
-                if (!name || !email) {
-                    Swal.showValidationMessage('Name and Email are required');
-                    return;
-                }
-
-                if (!/^\S+@\S+\.\S+$/.test(email)) {
-                    Swal.showValidationMessage('Invalid email format');
-                    return;
-                }
-
-                return { name, email, sellerType, is_already_agent, isVerified };
-            },
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                const success = await updateUser(user.id, result.value);
-                if (success) {
-                    Swal.fire('Updated!', 'User details have been updated.', 'success');
-                    refetchUsers();
-                } else {
-                    Swal.fire('Error!', updateError || 'Failed to update user.', 'error');
-                }
-            }
-        });
+    const handleOpenModal = (user?: User): void => {
+        setIsEditMode(!!user);
+        setModalData(user || { name: '', email: '', sellerType: '', isAlreadyAgent: false, isVerified: false });
+        setModalOpen(true);
     };
 
-    const handleAdd = (): void => {
-        Swal.fire({
-            title: 'Add New User',
-            html: `...`, // Add user form here as needed
-        }).then((result) => {
-            if (result.isConfirmed) {
-                console.log('New user:', result.value);
-            }
-        });
+    const handleCloseModal = (): void => {
+        setModalOpen(false);
+        setModalData({});
+    };
+
+    const handleModalSubmit = async (): Promise<void> => {
+        const { name, email, sellerType, isAlreadyAgent, isVerified } = modalData;
+        if (!name || !email) {
+            Swal.fire('Error', 'Name and Email are required', 'error');
+            return;
+        }
+        if (!/^\S+@\S+\.\S+$/.test(email)) {
+            Swal.fire('Error', 'Invalid email format', 'error');
+            return;
+        }
+
+        const success = isEditMode ? await updateUser(modalData.id!, { name, email, sellerType, isAlreadyAgent, isVerified }) : true; // Implement add user logic here.
+
+        if (success) {
+            Swal.fire('Success', isEditMode ? 'User updated successfully' : 'User added successfully', 'success');
+            refetchUsers();
+            handleCloseModal();
+        } else {
+            Swal.fire('Error', updateError || 'Failed to save user', 'error');
+        }
     };
 
     const handleDelete = (userId: string): void => {
@@ -141,7 +113,7 @@ const Users = (): JSX.Element => {
                     <div className="ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                     </div>
-                    <button className="btn btn-primary py-2 hover:bg-white hover:text-primary hover:border-primary" onClick={handleAdd}>
+                    <button className="btn btn-primary py-2 hover:bg-white hover:text-primary hover:border-primary" onClick={() => handleOpenModal()}>
                         Add New User
                     </button>
                 </div>
@@ -173,13 +145,13 @@ const Users = (): JSX.Element => {
                                 accessor: 'actions',
                                 title: 'Actions',
                                 render: (record) => (
-                                    <div className="flex gap-2">
-                                        <button onClick={() => handleEdit(record)} disabled={updateLoading}>
+                                    <div className="flex justify-start items-center">
+                                        <Button style={{ minWidth: 'auto' }} onClick={() => handleOpenModal(record)} disabled={updateLoading}>
                                             <FaEdit />
-                                        </button>
-                                        <button onClick={() => handleDelete(record.id)} disabled={deleteLoading}>
+                                        </Button>
+                                        <Button style={{ minWidth: 'auto' }} onClick={() => handleDelete(record.id)} disabled={deleteLoading}>
                                             <FaTrashAlt />
-                                        </button>
+                                        </Button>
                                     </div>
                                 ),
                             },
@@ -198,6 +170,55 @@ const Users = (): JSX.Element => {
                     />
                 </div>
             </div>
+
+            {/* Material-UI Modal for Add/Edit */}
+            <Modal open={modalOpen} onClose={handleCloseModal}>
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        bgcolor: 'background.paper',
+                        boxShadow: 24,
+                        p: 4,
+                        width: 400,
+                    }}
+                >
+                    <Typography variant="h6" component="h2" mb={2}>
+                        {isEditMode ? 'Edit User' : 'Add New User'}
+                    </Typography>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <TextField fullWidth label="Name" value={modalData.name} onChange={(e) => setModalData((prev) => ({ ...prev, name: e.target.value }))} required />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField fullWidth label="Email" value={modalData.email} onChange={(e) => setModalData((prev) => ({ ...prev, email: e.target.value }))} required />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField fullWidth label="Seller Type" value={modalData.sellerType} onChange={(e) => setModalData((prev) => ({ ...prev, sellerType: e.target.value }))} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControlLabel
+                                control={<Checkbox checked={modalData.isAlreadyAgent || false} onChange={(e) => setModalData((prev) => ({ ...prev, isAlreadyAgent: e.target.checked }))} />}
+                                label="Already Agent"
+                            />
+                            <FormControlLabel
+                                control={<Checkbox checked={modalData.isVerified || false} onChange={(e) => setModalData((prev) => ({ ...prev, isVerified: e.target.checked }))} />}
+                                label="Verified"
+                            />
+                        </Grid>
+                    </Grid>
+                    <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
+                        <Button variant="outlined" onClick={handleCloseModal}>
+                            Cancel
+                        </Button>
+                        <Button variant="contained" color="primary" onClick={handleModalSubmit} disabled={updateLoading}>
+                            {updateLoading ? <CircularProgress size={24} /> : 'Save'}
+                        </Button>
+                    </Box>
+                </Box>
+            </Modal>
         </div>
     );
 };

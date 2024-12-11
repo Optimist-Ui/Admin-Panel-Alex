@@ -11,13 +11,12 @@ import IconCaretDown from '../Icon/IconCaretDown';
 import IconMenuDashboard from '../Icon/Menu/IconMenuDashboard';
 import IconMinus from '../Icon/IconMinus';
 import IconMenuUsers from '../Icon/Menu/IconMenuUsers';
-import IconHome from '../Icon/IconHome';
 import { MdSubscriptions } from 'react-icons/md';
 import { AiOutlineHome } from 'react-icons/ai';
+import IconUser from '../Icon/IconUser';
 
 const Sidebar = () => {
     const [currentMenu, setCurrentMenu] = useState<string>('');
-    const [errorSubMenu, setErrorSubMenu] = useState(false);
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
     const semidark = useSelector((state: IRootState) => state.themeConfig.semidark);
     const location = useLocation();
@@ -88,7 +87,7 @@ const Sidebar = () => {
 
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <IconMinus className="w-4 h-5 flex-none hidden" />
-                                <span>{t('User Managment')}</span>
+                                <span>{t('User Management')}</span>
                             </h2>
                             <li className="menu nav-item">
                                 <button type="button" className={`${currentMenu === 'usermanagement' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('usermanagement')}>
@@ -117,7 +116,7 @@ const Sidebar = () => {
                             </li>
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <IconMinus className="w-4 h-5 flex-none hidden" />
-                                <span>{t('Property Managment')}</span>
+                                <span>{t('Property Management')}</span>
                             </h2>
                             <li className="menu nav-item">
                                 <NavLink to="/properties" className="main-logo flex items-center shrink-0">
@@ -134,11 +133,25 @@ const Sidebar = () => {
                                 <span>{t('Plans Management')}</span>
                             </h2>
                             <li className="menu nav-item">
-                                <NavLink to="/subscriptions" className="main-logo flex items-center shrink-0">
+                                <NavLink to="/plans" className="main-logo flex items-center shrink-0">
                                     <button type="button" className={`${currentMenu === 'plan' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('plan')}>
                                         <div className="flex items-center">
                                             <MdSubscriptions className="group-hover:!text-primary shrink-0" />
                                             <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('Plans')}</span>
+                                        </div>
+                                    </button>
+                                </NavLink>
+                            </li>
+                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <IconMinus className="w-4 h-5 flex-none hidden" />
+                                <span>{t('Profile Management')}</span>
+                            </h2>
+                            <li className="menu nav-item">
+                                <NavLink to="/profile" className="main-logo flex items-center shrink-0">
+                                    <button type="button" className={`${currentMenu === 'profile' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('profile')}>
+                                        <div className="flex items-center">
+                                            <IconUser className="group-hover:!text-primary shrink-0" />
+                                            <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('Profile Management')}</span>
                                         </div>
                                     </button>
                                 </NavLink>

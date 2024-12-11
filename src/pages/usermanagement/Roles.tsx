@@ -27,6 +27,7 @@ const Roles: React.FC = () => {
         name: '',
         permissions: [] as string[],
     });
+    const [search, setSearch] = useState('');
 
     const { roles, loading: rolesLoading, error: rolesError, refetchRoles } = useRolesListing();
     const { permissions, loading: permissionsLoading, error: permissionsError } = usePermissionsListing();
@@ -40,12 +41,25 @@ const Roles: React.FC = () => {
 
     // Handle Modal Open/Close
     const handleOpenModal = (role?: any, viewOnly = false) => {
-        setCurrentRole(role || { id: '', name: '', permissions: [] });
         setViewOnly(viewOnly);
         setIsModalOpen(true);
+
+        if (role) {
+            refetchRole(); // Refetch role data to ensure synchronization
+            setCurrentRole({
+                id: role.id,
+                name: role.name,
+                permissions: role.permissions,
+            });
+        } else {
+            setCurrentRole({ id: '', name: '', permissions: [] });
+        }
     };
 
-    const handleCloseModal = () => setIsModalOpen(false);
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setCurrentRole({ id: '', name: '', permissions: [] }); // Reset `currentRole` on modal close
+    };
 
     const handleFormSubmit = async () => {
         if (!currentRole.name.trim()) {
@@ -53,23 +67,20 @@ const Roles: React.FC = () => {
             return;
         }
 
-        // Map string-based permissions to expected objects or IDs
         const mappedPermissions = currentRole.permissions.map((permissionName) => {
             const matchedPermission = permissions.find((perm) => perm.name === permissionName);
-            return matchedPermission ? matchedPermission.id : permissionName; // Use _id if found, fallback to string
+            return matchedPermission ? matchedPermission.id : permissionName;
         });
 
         let success = false;
 
         if (currentRole.id) {
-            // Update role with mapped permissions
             success = await updateRole({
                 id: currentRole.id,
                 name: currentRole.name,
                 permissions: mappedPermissions,
             });
         } else {
-            // Add role with mapped permissions
             success = await addRole({
                 name: currentRole.name,
                 permissions: mappedPermissions,
@@ -93,12 +104,10 @@ const Roles: React.FC = () => {
         }
     };
 
-    // Handle Input Changes
     const handleInputChange = (field: string, value: any) => {
         setCurrentRole((prev) => ({ ...prev, [field]: value }));
     };
 
-    // Handle Delete Role
     const handleDeleteRole = async (roleId: string) => {
         const result = await Swal.fire({
             title: 'Are you sure?',
@@ -129,7 +138,6 @@ const Roles: React.FC = () => {
         }
     };
 
-    // Populate `currentRole` when a role is fetched by ID
     useEffect(() => {
         if (role) {
             setCurrentRole({
@@ -144,16 +152,15 @@ const Roles: React.FC = () => {
         <div>
             <div className="panel mt-6">
                 <div className="flex justify-between items-center mb-5">
-                    <h5 className="font-bold text-2xl dark:text-white-light ml-2 flex items-center">
-                        Roles
-                        <button
-                            type="button"
-                            onClick={() => handleOpenModal(undefined, false)}
-                            className="ml-3 rounded-full text-primary border-primary border p-1 hover:text-white hover:bg-primary transition-all duration-300"
-                        >
-                            <FaPlus />
-                        </button>
-                    </h5>
+                    <h5 className="font-bold text-2xl dark:text-white-light ml-2 flex items-center">All Roles</h5>
+                </div>
+                <div className="flex md:items-center md:flex-row flex-col mb-5 gap-5">
+                    <div className="ltr:ml-auto rtl:mr-auto">
+                        <input type="text" className="form-input w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                    </div>
+                    <button type="button" onClick={() => handleOpenModal(undefined, false)} className="btn btn-primary py-2 hover:bg-white hover:text-primary hover:border-primary">
+                        Add New Role
+                    </button>
                 </div>
 
                 <div className="table-responsive mb-5 overflow-x-auto">
@@ -177,31 +184,33 @@ const Roles: React.FC = () => {
                                         {rolesError}
                                     </td>
                                 </tr>
-                            ) : roles.length === 0 ? (
+                            ) : roles.filter((role) => role.name.toLowerCase().includes(search.toLowerCase())).length === 0 ? (
                                 <tr>
                                     <td colSpan={2} className="text-center">
                                         No roles available
                                     </td>
                                 </tr>
                             ) : (
-                                roles.map((role) => (
-                                    <tr key={role.id} className="border-b hover:bg-gray-100 flex justify-between w-full items-center text-center">
-                                        <td className="p-2">{role.name}</td>
-                                        <td>
-                                            <div className="flex gap-2">
-                                                <button type="button" onClick={() => handleOpenModal(role, false)} className="text-primary">
-                                                    <FaPencilAlt />
-                                                </button>
-                                                <button type="button" onClick={() => handleDeleteRole(role.id)} className="text-danger">
-                                                    {deleteLoading ? <CircularProgress size={20} /> : <FaTrash />}
-                                                </button>
-                                                <button type="button" onClick={() => handleOpenModal(role, true)} className="text-info">
-                                                    <FaEye />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                roles
+                                    .filter((role) => role.name.toLowerCase().includes(search.toLowerCase()))
+                                    .map((role) => (
+                                        <tr key={role.id} className="border-b hover:bg-gray-100 flex justify-between w-full items-center text-center">
+                                            <td className="p-2">{role.name}</td>
+                                            <td>
+                                                <div className="flex items-center justify-start">
+                                                    <Button style={{ minWidth: 'auto' }} type="button" onClick={() => handleOpenModal(role, false)}>
+                                                        <FaPencilAlt />
+                                                    </Button>
+                                                    <Button style={{ minWidth: 'auto' }} type="button" onClick={() => handleDeleteRole(role.id)}>
+                                                        {deleteLoading ? <CircularProgress size={20} /> : <FaTrash />}
+                                                    </Button>
+                                                    <Button style={{ minWidth: 'auto' }} type="button" onClick={() => handleOpenModal(role, true)}>
+                                                        <FaEye />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
                             )}
                         </tbody>
                     </table>
@@ -216,7 +225,7 @@ const Roles: React.FC = () => {
                         <Typography variant="h6" sx={{ mt: 2 }}>
                             Permissions
                         </Typography>
-                        {permissionsLoading ? (
+                        {permissionsLoading || !currentRole.permissions ? (
                             <CircularProgress />
                         ) : permissionsError ? (
                             <p className="text-red-500">{permissionsError}</p>

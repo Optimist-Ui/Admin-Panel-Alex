@@ -77,7 +77,7 @@ const validationSchema = Yup.object({
     views: Yup.number().min(0, 'Views must be a positive number'),
 });
 
-const AddProperties = () => {
+const EditProperty = () => {
     const [images, setImages] = useState<ImagePreview[]>([]);
     const { addProperty, loading, error, success } = useAddProperty();
     const id = localStorage.getItem('id');
@@ -480,4 +480,4 @@ const AddProperties = () => {
     );
 };
 
-export default AddProperties;
+export default EditProperty;

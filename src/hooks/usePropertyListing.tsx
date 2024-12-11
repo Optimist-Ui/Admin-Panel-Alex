@@ -57,7 +57,7 @@ export const usePropertyListing = () => {
             });
 
             if (response.data.success) {
-                setProperties(response.data.data);
+                setProperties(response.data.data?.properties || []);
             } else {
                 setError(response.data.message || 'Failed to fetch properties');
             }

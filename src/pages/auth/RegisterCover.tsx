@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { setPageTitle, toggleRTL } from '../../store/themeConfigSlice';
 import { IRootState } from '../../store';
 import IconUser from '../../components/Icon/IconUser';
 import IconMail from '../../components/Icon/IconMail';
 import IconLockDots from '../../components/Icon/IconLockDots';
+import useRegister from '../../hooks/Authentication/useRegister';
 
 const RegisterCover = () => {
     const dispatch = useDispatch();
@@ -15,6 +17,34 @@ const RegisterCover = () => {
     const navigate = useNavigate();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
+    const { registerUser, loading, error, successMessage } = useRegister();
+    const [formData, setFormData] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setFormData((prev) => ({ ...prev, [id]: value }));
+    };
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await registerUser(formData);
+    };
+    useEffect(() => {
+        if (successMessage) {
+            Swal.fire({
+                title: 'Registration Successful!',
+                text: 'Your account has been created. Please log in to continue.',
+                icon: 'success',
+                confirmButtonText: 'OK',
+            }).then(() => {
+                navigate('/login');
+            });
+        }
+    }, [successMessage, navigate]);
     const setLocale = (flag: string) => {
         setFlag(flag);
         if (flag.toLowerCase() === 'ae') {
@@ -57,50 +87,93 @@ const RegisterCover = () => {
                                 <h1 className="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign Up</h1>
                                 <p className="text-base font-bold leading-normal text-white-dark">Enter your email and password to register</p>
                             </div>
-                            <form className="space-y-5 dark:text-white" onSubmit={submitForm}>
+                            <form className="space-y-5 dark:text-white" onSubmit={handleSubmit}>
                                 <div>
-                                    <label htmlFor="Name">Name</label>
+                                    <label htmlFor="first_name">First Name</label>
                                     <div className="relative text-white-dark">
-                                        <input id="Name" type="text" placeholder="Enter Name" className="form-input ps-10 placeholder:text-white-dark" />
+                                        <input
+                                            id="first_name"
+                                            type="text"
+                                            placeholder="Enter Name"
+                                            className="form-input ps-10 placeholder:text-white-dark"
+                                            value={formData.first_name}
+                                            onChange={handleChange}
+                                            required
+                                        />
                                         <span className="absolute start-4 top-1/2 -translate-y-1/2">
                                             <IconUser fill={true} />
                                         </span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="Email">Email</label>
+                                    <label htmlFor="last_name">Last Name</label>
                                     <div className="relative text-white-dark">
-                                        <input id="Email" type="email" placeholder="Enter Email" className="form-input ps-10 placeholder:text-white-dark" />
+                                        <input
+                                            id="last_name"
+                                            type="text"
+                                            placeholder="Enter Name"
+                                            className="form-input ps-10 placeholder:text-white-dark"
+                                            value={formData.last_name}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                        <span className="absolute start-4 top-1/2 -translate-y-1/2">
+                                            <IconUser fill={true} />
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="email">Email</label>
+                                    <div className="relative text-white-dark">
+                                        <input
+                                            id="email"
+                                            type="email"
+                                            placeholder="Enter Email"
+                                            className="form-input ps-10 placeholder:text-white-dark"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            required
+                                        />
                                         <span className="absolute start-4 top-1/2 -translate-y-1/2">
                                             <IconMail fill={true} />
                                         </span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="Password">Password</label>
+                                    <label htmlFor="password">Password</label>
                                     <div className="relative text-white-dark">
-                                        <input id="Password" type="password" placeholder="Enter Password" className="form-input ps-10 placeholder:text-white-dark" />
+                                        <input
+                                            id="password"
+                                            type="password"
+                                            placeholder="Enter Password"
+                                            className="form-input ps-10 placeholder:text-white-dark"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            required
+                                        />
                                         <span className="absolute start-4 top-1/2 -translate-y-1/2">
                                             <IconLockDots fill={true} />
                                         </span>
                                     </div>
                                 </div>
-                                <button type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]">
-                                    Sign Up
+                                <button type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]" disabled={loading}>
+                                    {loading ? 'Registering...' : 'Sign Up'}
                                 </button>
                             </form>
+                            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                            {successMessage && <p className="text-green-500 text-sm mt-2">{successMessage}</p>}
                             <div className="relative my-7 text-center md:mb-9">
                                 <span className="absolute inset-x-0 top-1/2 h-px w-full -translate-y-1/2 bg-white-light dark:bg-white-dark"></span>
                                 <span className="relative bg-white px-2 font-bold uppercase text-white-dark dark:bg-dark dark:text-white-light">or</span>
                             </div>
                             <div className="text-center dark:text-white">
-                                Already have an account ?&nbsp;
+                                Already have an account?&nbsp;
                                 <Link to="/login" className="uppercase text-primary underline transition hover:text-black dark:hover:text-white">
                                     SIGN IN
                                 </Link>
                             </div>
                         </div>
-                        <p className="absolute bottom-6 w-full text-center dark:text-white">© {new Date().getFullYear()}.Welcome to Immoworld.</p>
+                        <p className="absolute bottom-6 w-full text-center dark:text-white">© {new Date().getFullYear()}. Welcome to Immoworld.</p>
                     </div>
                 </div>
             </div>
