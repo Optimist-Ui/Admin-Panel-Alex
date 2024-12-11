@@ -4,6 +4,11 @@ import Properties from '../pages/properties/Properties';
 import AddProperties from '../pages/properties/AddProperties';
 import Subscription from '../pages/Subscription/Subscription';
 import Profile from '../pages/profile/Profile';
+import EditProperty from '../pages/properties/EditProperty';
+import Countries from '../pages/countries/Countries';
+import UpdateCountry from '../pages/countries/UpdateCountry';
+import CountryCities from '../pages/countries/cities/CountryCities';
+import UpdateCity from '../pages/countries/cities/UpdateCity';
 
 const Roles = lazy(() => import('../pages/usermanagement/Roles'));
 const Users = lazy(() => import('../pages/usermanagement/Users'));
@@ -25,6 +30,42 @@ const routes = [
         layout: 'default',
     },
     {
+        path: '/countries',
+        element: (
+            <ProtectedRoute>
+                <Countries />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/cities',
+        element: (
+            <ProtectedRoute>
+                <CountryCities />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/city/update/:id',
+        element: (
+            <ProtectedRoute>
+                <UpdateCity />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/countries/update/:id',
+        element: (
+            <ProtectedRoute>
+                <UpdateCountry />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
         path: '/properties',
         element: (
             <ProtectedRoute>
@@ -38,6 +79,15 @@ const routes = [
         element: (
             <ProtectedRoute>
                 <AddProperties />
+            </ProtectedRoute>
+        ),
+        layout: 'default',
+    },
+    {
+        path: '/properties/update/:propertyId',
+        element: (
+            <ProtectedRoute>
+                <EditProperty />
             </ProtectedRoute>
         ),
         layout: 'default',

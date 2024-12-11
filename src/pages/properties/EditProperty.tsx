@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useFormik } from 'formik';
-import ImageUploading, { ImageListType } from 'react-images-uploading';
 import * as Yup from 'yup';
-import { useAddProperty } from '../../hooks/properties/useAddProperty';
 import Swal from 'sweetalert2';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useUpdateProperty } from '../../hooks/properties/useUpdateProperty';
+import { useGetPropertyById } from '../../hooks/properties/useGetPropertyByID';
 
-type ImagePreview = { src: string };
+// Define valid categories for validation
 const validCategories = ['Apartments', 'Bungalow', 'Houses', 'Loft', 'Office', 'Townhome', 'Villa'];
 
 const validationSchema = Yup.object({
@@ -15,23 +15,15 @@ const validationSchema = Yup.object({
     category: Yup.array()
         .of(Yup.string().required('Category is required'))
         .required('Category is required')
-        .test('valid-category', ` Allowed categories: ${validCategories.join(', ')}`, (value) => {
+        .test('valid-category', `Allowed categories: ${validCategories.join(', ')}`, (value) => {
             if (value && Array.isArray(value)) {
                 return value.every((category) => typeof category === 'string' && validCategories.includes(category));
             }
             return false;
         }),
-    amenities: Yup.array()
-        .of(Yup.string().required('Each amenity must be a string'))
-        .optional() // Allow empty
-        .test('array-format', 'Amenities must be an array of strings', (value: string) => {
-            if (value && Array.isArray(value)) {
-                return value.every((item) => typeof item === 'string');
-            }
-            return true; // If empty, it's valid (since it's optional)
-        }),
-    status: Yup.string().required('Status is required').oneOf(['Pending', 'Active', 'Inactive'], 'Status must match : "Pending", "Active", or "Inactive"'),
-    type: Yup.string().required('Type is required').oneOf(['Rent', 'Sale'], 'Type must match: "Rent" or "Sale"'),
+    amenities: Yup.array().of(Yup.string().required('Each amenity must be a string')).optional(),
+    status: Yup.string().required('Status is required').oneOf(['Pending', 'Active', 'Inactive']),
+    type: Yup.string().required('Type is required').oneOf(['Rent', 'Sale']),
     price: Yup.number().min(0, 'Price must be positive').required('Price is required'),
     address: Yup.string().required('Address is required'),
     latitude: Yup.number().required('Latitude is required'),
@@ -45,109 +37,105 @@ const validationSchema = Yup.object({
     garageSize: Yup.number().min(0, 'Garage size must be positive'),
     yearBuilt: Yup.number().min(0, 'Year must be a valid number'),
     availableFrom: Yup.date().required('Available From date is required'),
-    basement: Yup.string(),
-    extraDetails: Yup.string(),
-    roofing: Yup.string(),
-    exteriorMaterial: Yup.string(),
-    gallery: Yup.array().of(
-        Yup.object().shape({
-            src: Yup.string(),
-        })
-    ),
-    city: Yup.string()
-        .required('City is required')
-        .test('valid-city', 'City must be a valid ObjectId or a valid city name', (value: string | undefined) => {
-            if (typeof value !== 'string') return false;
-
-            // Check if the value is a valid MongoDB ObjectId (24-character hex string)
-            const isObjectId = /^[0-9a-fA-F]{24}$/.test(value);
-
-            // If the value is a valid ObjectId, it's valid
-            if (isObjectId) return true;
-
-            // Check if the value is a valid city name (non-empty and non-whitespace)
-            const isValidCityName = value.trim().length > 0;
-
-            // If it's not a valid ObjectId, it must be a valid city name
-            return isValidCityName;
-        }),
+    city: Yup.string().required('City is required'),
     ownerId: Yup.string().required('Owner ID is required'),
-    ownerType: Yup.string().required('Owner type is required').oneOf(['user', 'agent'], 'Owner type must match : "user" or "agent"'),
+    ownerType: Yup.string().required('Owner type is required').oneOf(['user', 'agent']),
     isFeatured: Yup.boolean(),
     views: Yup.number().min(0, 'Views must be a positive number'),
 });
 
 const EditProperty = () => {
-    const [images, setImages] = useState<ImagePreview[]>([]);
-    const { addProperty, loading, error, success } = useAddProperty();
-    const id = localStorage.getItem('id');
+    const [images, setImages] = useState<{ src: string }[]>([]); // Local state for image previews
+    const { propertyId } = useParams<{ propertyId: string }>();
     const navigate = useNavigate();
+
+    // Fetch property details
+    const { property, loading: fetchingProperty, error: fetchError } = useGetPropertyById(propertyId || '');
+    const { updateProperty, loading: updating, error: updateError, success } = useUpdateProperty();
+
+    // Formik configuration
     const formik = useFormik({
         initialValues: {
-            title: '',
-            description: '',
-            category: [],
-            status: '',
-            price: '',
-            type: '',
-            address: '',
-            latitude: '',
-            longitude: '',
-            size: '',
-            roomSize: '',
-            rooms: '',
-            bedrooms: '',
-            bathrooms: '',
-            garages: '',
-            garageSize: '',
-            yearBuilt: '',
-            availableFrom: '',
-            basement: '',
-            extraDetails: '',
-            roofing: '',
-            exteriorMaterial: '',
-            amenities: [],
-            gallery: [],
-            city: '',
-            ownerId: `${id}`,
-            ownerType: '',
-            isFeatured: false,
-            views: '5',
+            title: property?.title || '',
+            description: property?.description || '',
+            category: property?.category || [],
+            status: property?.status || '',
+            price: property?.price || 0,
+            type: property?.type || '',
+            address: property?.address || '',
+            latitude: property?.latitude || 0,
+            longitude: property?.longitude || 0,
+            size: property?.size || 0,
+            roomSize: property?.roomSize || 0,
+            rooms: property?.rooms || 0,
+            bedrooms: property?.bedrooms || 0,
+            bathrooms: property?.bathrooms || 0,
+            garages: property?.garages || 0,
+            garageSize: property?.garageSize || 0,
+            yearBuilt: property?.yearBuilt || 0,
+            availableFrom: property?.availableFrom ? property.availableFrom.split('T')[0] : '', // Convert to yyyy-MM-dd
+            basement: property?.basement || '',
+            extraDetails: property?.extraDetails || '',
+            roofing: property?.roofing || '',
+            exteriorMaterial: property?.exteriorMaterial || '',
+            amenities: property?.amenities || [],
+            gallery: property?.gallery || [],
+            city: property?.city || '',
+            ownerId: property?.ownerId || '',
+            ownerType: property?.ownerType || '',
+            isFeatured: property?.isFeatured || false,
+            views: property?.views || 0,
         },
+        enableReinitialize: true,
         validationSchema,
         onSubmit: async (values) => {
             try {
                 const propertyData = {
                     ...values,
-                    gallery: images, // Add images to the form data
+                    gallery: images.length ? images : property?.gallery || [],
+                    availableFrom: new Date(values.availableFrom).toISOString(),
                 };
-                const response = await addProperty(propertyData);
+
+                const { success, data, error } = await updateProperty(propertyId || '', propertyData);
+
                 if (success) {
-                    formik.resetForm();
                     Swal.fire({
-                        title: 'Added!',
-                        text: 'The property has been added.',
+                        title: 'Updated!',
+                        text: 'The property has been successfully updated.',
                         icon: 'success',
+                        confirmButtonText: 'OK',
+                    }).then(() => {
+                        navigate('/properties');
                     });
-                    navigate('/properties');
-                    console.log('Property added successfully', response);
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: error || 'An unknown error occurred.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                    });
                 }
             } catch (err) {
-                console.error('Error adding property', err);
+                console.error('Error in onSubmit:', err);
             }
         },
     });
 
+    // Handle file upload changes for gallery
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files) {
-            // Generate preview URLs for selected files and structure as objects
             const previews = Array.from(files).map((file: File) => ({
                 src: URL.createObjectURL(file),
             }));
-            setImages(previews); // Update state with preview objects
+            setImages(previews);
         }
     };
+
+    // Render logic
+    if (fetchingProperty) return <p>Loading property details...</p>;
+    if (fetchError) return <p>Error loading property: {fetchError}</p>;
+    if (!property) return <p>No property found.</p>;
 
     return (
         <div className="panel" id="custom_styles">
@@ -471,8 +459,8 @@ const EditProperty = () => {
                     </div>
                 </section>
                 <div className="flex justify-center items-center text-center py-6 mt-5 pb-8">
-                    <button type="submit" className="btn btn-primary py-2 px-8 text-lg hover:bg-white hover:text-primary hover:border-primary" disabled={loading}>
-                        {loading ? 'Submitting...' : 'Submit'}
+                    <button type="submit" className="btn btn-primary py-2 px-8 text-lg hover:bg-white hover:text-primary hover:border-primary" disabled={updating}>
+                        {updating ? 'Updating...' : 'Update'}
                     </button>
                 </div>
             </form>

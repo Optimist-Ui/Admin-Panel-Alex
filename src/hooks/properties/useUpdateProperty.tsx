@@ -16,22 +16,29 @@ export const useUpdateProperty = () => {
         setSuccess(false);
 
         try {
-            const authToken = localStorage.getItem('authToken'); // Replace with your token logic if needed
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                throw new Error('Authentication token is missing');
+            }
+
             const response = await axios.put(`${API_URL}/api/properties/${propertyId}`, updateData, {
                 headers: {
                     Authorization: `Bearer ${authToken}`,
                 },
             });
-            console.log(propertyId, updateData);
 
             if (response.data.success) {
                 setSuccess(true);
-                return response.data.data; // Return the updated property data
+                return { data: response.data.data, success: true }; // Return success and data
             } else {
-                setError(response.data.message || 'Failed to update the property');
+                const message = response.data.message || 'Failed to update the property';
+                setError(message);
+                return { success: false, error: message };
             }
         } catch (err: any) {
-            setError(err || 'An error occurred while updating the property');
+            const message = err.response?.data?.message || 'An error occurred while updating the property';
+            setError(message);
+            return { success: false, error: message };
         } finally {
             setLoading(false);
         }

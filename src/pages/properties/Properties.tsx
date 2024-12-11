@@ -14,7 +14,7 @@ const Properties = (): JSX.Element => {
     const [openRow, setOpenRow] = useState<string | null>(null);
 
     const handleEditOpen = (property: any) => {
-        console.log('Edit Property:', property); // Placeholder for edit action
+        router(`/properties/update/${property._id}`);
     };
     const handleDelete = async (id: string) => {
         const confirmDelete = await Swal.fire({

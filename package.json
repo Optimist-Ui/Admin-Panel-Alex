@@ -23,6 +23,7 @@
         "@types/react": "^18.0.21",
         "@types/react-dom": "^18.0.6",
         "axios": "^1.7.9",
+        "date-fns": "^4.1.0",
         "formik": "^2.2.9",
         "mantine-datatable": "^1.7.17",
         "react": "^18.2.0",
@@ -42,6 +43,7 @@
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.3",
         "@tailwindcss/typography": "^0.5.7",
+        "@types/date-fns": "^2.5.3",
         "@types/react": "^18.0.27",
         "@types/react-dom": "^18.0.10",
         "@vitejs/plugin-react": "^3.1.0",

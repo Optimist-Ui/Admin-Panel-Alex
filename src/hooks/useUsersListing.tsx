@@ -7,7 +7,7 @@ export type User = {
     id: string; // Mapped from _id
     name: string;
     email: string;
-    isAlreadyAgent: boolean; // Mapped from is_already_agent
+    is_already_agent: boolean; // Mapped from is_already_agent
     isVerified: boolean; // Mapped from isVerified
     sellerType?: string | null; // Optional field
 };
@@ -53,7 +53,7 @@ export const useUsersListing = () => {
                     name: user.name,
                     email: user.email,
 
-                    isAlreadyAgent: user.is_already_agent,
+                    is_already_agent: user.is_already_agent,
                     isVerified: user.isVerified,
                     sellerType: user.sellerType,
                 }));
